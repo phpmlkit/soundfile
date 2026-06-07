@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhpMlKit\SoundFile\Enums;
 
+use PhpMlKit\NDArray\DType;
+
 /**
  * Major audio container formats supported by libsndfile.
  *
@@ -76,44 +78,36 @@ enum AudioFormat: int
     }
 
     /**
-     * The subtype this format defaults to when none is specified on write.
-     */
-    public function defaultSampleFormat(): SampleFormat
-    {
-        return match ($this) {
-            self::Wav => SampleFormat::Pcm16,
-            self::Aiff => SampleFormat::Pcm16,
-            self::Flac => SampleFormat::Pcm16,
-            self::Ogg => SampleFormat::Vorbis,
-            self::Mpeg => SampleFormat::MpegLayerIII,
-            self::Caf => SampleFormat::Float,
-            default => SampleFormat::Pcm16,
-        };
-    }
-
-    /**
-     * All subtypes that are compatible with this format.
+     * All subtypes compatible with this format, ordered by preference.
+     *
+     * The first entry is the best default when no subtype or DType
+     * preference can be determined. Subtypes later in the list are
+     * increasingly niche or lossy fallbacks.
      *
      * @return SampleFormat[]
      */
     public function compatibleSampleFormats(): array
     {
         return match ($this) {
-            self::Flac => [SampleFormat::PcmS8, SampleFormat::Pcm16, SampleFormat::Pcm24],
-            self::Ogg => [SampleFormat::Vorbis],
-            self::Mpeg => [
-                SampleFormat::MpegLayerI,
-                SampleFormat::MpegLayerII,
-                SampleFormat::MpegLayerIII,
-            ],
-            self::Wav, self::Wavex, self::Rf64, self::W64 => [
-                SampleFormat::PcmS8,
+            self::Flac => [
                 SampleFormat::Pcm16,
                 SampleFormat::Pcm24,
-                SampleFormat::Pcm32,
-                SampleFormat::PcmU8,
+                SampleFormat::PcmS8,
+            ],
+            self::Ogg => [SampleFormat::Vorbis],
+            self::Mpeg => [
+                SampleFormat::MpegLayerIII,
+                SampleFormat::MpegLayerII,
+                SampleFormat::MpegLayerI,
+            ],
+            self::Wav, self::Wavex, self::Rf64, self::W64 => [
                 SampleFormat::Float,
                 SampleFormat::Double,
+                SampleFormat::Pcm32,
+                SampleFormat::Pcm24,
+                SampleFormat::Pcm16,
+                SampleFormat::PcmS8,
+                SampleFormat::PcmU8,
                 SampleFormat::ULaw,
                 SampleFormat::ALaw,
                 SampleFormat::ImaAdpcm,
@@ -121,10 +115,34 @@ enum AudioFormat: int
                 SampleFormat::Gsm610,
             ],
             default => [
-                SampleFormat::PcmS8, SampleFormat::Pcm16, SampleFormat::Pcm24,
-                SampleFormat::Pcm32, SampleFormat::Float, SampleFormat::Double,
+                SampleFormat::Float,
+                SampleFormat::Double,
+                SampleFormat::Pcm32,
+                SampleFormat::Pcm24,
+                SampleFormat::Pcm16,
+                SampleFormat::PcmS8,
+                SampleFormat::PcmU8,
             ],
         };
+    }
+
+    /**
+     * Best SampleFormat for writing data of the given DType to this format.
+     *
+     * Resolves by checking if the DType's preferred subtype is in the
+     * compatible list. Falls back to the first compatible entry when no
+     * direct match exists.
+     */
+    public function preferredSampleFormat(DType $dtype): SampleFormat
+    {
+        $preferred = SampleFormat::fromDtype($dtype);
+        $compatible = $this->compatibleSampleFormats();
+
+        if (null !== $preferred && \in_array($preferred, $compatible, true)) {
+            return $preferred;
+        }
+
+        return $compatible[0];
     }
 
     /**

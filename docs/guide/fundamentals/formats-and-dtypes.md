@@ -48,8 +48,8 @@ It also provides convenience:
 
 - `AudioFormat::fromExtension()` / `fromPath()`
 - `extension()`
-- `defaultSampleFormat()`
-- `compatibleSampleFormats()`
+- `compatibleSampleFormats()` — all valid subtypes ordered by preference
+- `preferredSampleFormat(DType)` — best subtype for a given in-memory dtype
 
 ---
 
@@ -65,16 +65,14 @@ When you read a file, SndFle:
 ## What happens on write?
 
 - If you omit `AudioFormat`, it is inferred from the file extension.
-- If the extension is unknown, SoundFile throws:
-- If you omit `SampleFormat`, it defaults to the Audio format's default sample format:
-  - WAV → PCM16
-  - FLAC → PCM16
-  - OGG → Vorbis
-  - MP3 → MpegLayerIII
-  - CAF → Float
+- If you omit `SampleFormat`, SoundFile selects an encoding by consulting both the
+  AudioFormat's compatible subtypes and the data's DType — `Float32` data in a
+  WAV container selects `Float`, `Int16` data selects `PCM16`, and so on. When
+  the format doesn't support the data's preferred encoding, the format's best
+  default is used instead.
 - The input NDArray is converted to the dtype implied by the chosen SampleFormat:
-  - WAV + PCM16 → `Int16`
   - WAV + Float → `Float32`
+  - WAV + PCM16 → `Int16`
   - WAV + Double → `Float64`
 - The data is written to the file.
 
@@ -104,19 +102,20 @@ An invalid combination throws a `SoundFileException` before any file is created.
 
 ## Bit Depth and Clipping
 
-PCM formats store integer samples (e.g. `Int16`) and floating formats store `Float32/Float64`.
+PCM formats store integer samples (e.g. `Int16`) and floating formats store `Float32`/`Float64`. When you write data without an explicit subtype, SoundFile selects an encoding by consulting both the format's compatible subtypes and the data's DType — float data in a float-capable container stays in a float encoding, avoiding unintended clipping.
 
-SoundFile does not impose an extra normalization layer; you are responsible for choosing a representation that matches
-your pipeline. If you write float data to a PCM subtype, it will be converted to integers. For example, when writing Float21 data as Pcm16, values outside the Int16 range (-32768 to 32767) are clipped by libsndfile:
+If you **explicitly** write float data to a PCM subtype, values are scaled to integers. Values outside the integer range are clipped by libsndfile:
 
 ```php
-// Values > 32767 clip to 32767
+// Explicit PCM16 — float values are scaled to Int16 range
 $loud = NDArray::array([[50000.0], [-50000.0]], DType::Float32);
-sf_write('loud.wav', $loud, 44100); // Written as Pcm16 — values clipped
+sf_write('loud.wav', $loud, 44100,
+    subtype: SampleFormat::Pcm16,
+);
 
 [$read, $] = sf_read('loud.wav');
 $arr = $read->toArray();
 // $arr[0] will be ~32767, $arr[1] will be ~-32768
 ```
 
-If you need explicit scaling/clipping rules for your application, apply them in NDArray before writing.
+SoundFile does not impose an extra normalization layer; you are responsible for choosing a representation that matches your pipeline. Apply scaling/clipping in NDArray before writing when needed.

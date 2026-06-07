@@ -218,8 +218,53 @@ final class FunctionsTest extends TestCase
         $src = NDArray::array([[0.5], [-0.5]], DType::Float32);
         $tmp = sys_get_temp_dir().'/sw_def_'.uniqid().'.wav';
 
-        // WAV defaults to Pcm16 when no subtype specified
+        // WAV now defaults to Float for float-native data (auto-preferred)
         sf_write($tmp, $src, 8000);
+        $info = sf_info($tmp);
+
+        $this->assertSame(SampleFormat::Float, $info->sampleFormat);
+
+        unlink($tmp);
+    }
+
+    /**
+     * Regression: writing Float32 data without an explicit subtype must
+     * preserve sample values — not truncate them to zero via Int16 cast.
+     */
+    public function testWriteFloat32DefaultSubtypePreservesValues(): void
+    {
+        $src = NDArray::array([[0.75], [-0.5], [0.25], [-0.9]], DType::Float32);
+        $tmp = sys_get_temp_dir().'/sw_rg_'.uniqid().'.wav';
+
+        sf_write($tmp, $src, 8000);
+        [$back, $info] = sf_read($tmp, always2d: true);
+
+        $this->assertSame(SampleFormat::Float, $info->sampleFormat);
+        $this->assertSame(DType::Float32, $back->dtype());
+
+        $srcArr = $src->toArray();
+        $backArr = $back->toArray();
+
+        for ($i = 0; $i < 4; ++$i) {
+            $this->assertEqualsWithDelta(
+                (float) $srcArr[$i][0],
+                (float) $backArr[$i][0],
+                0.001,
+            );
+        }
+
+        unlink($tmp);
+    }
+
+    /**
+     * FLAC does not support Float, so it stays at Pcm16.
+     */
+    public function testWriteFloat32FlacDefaultsToPcm16(): void
+    {
+        $src = NDArray::array([[0.5], [-0.5]], DType::Float32);
+        $tmp = sys_get_temp_dir().'/sw_flacdef_'.uniqid().'.flac';
+
+        sf_write($tmp, $src, 8000, AudioFormat::Flac);
         $info = sf_info($tmp);
 
         $this->assertSame(SampleFormat::Pcm16, $info->sampleFormat);

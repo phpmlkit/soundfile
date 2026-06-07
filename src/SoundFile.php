@@ -97,7 +97,7 @@ final class SoundFile
         $format ??= AudioFormat::fromPath($path)
             ?? throw new SoundFileException("Cannot determine format for '{$path}'");
 
-        $subtype ??= $format->defaultSampleFormat();
+        $subtype ??= $format->compatibleSampleFormats()[0];
 
         if (!sf_check_format($format, $subtype)) {
             throw new SoundFileException(
@@ -207,7 +207,7 @@ final class SoundFile
         }
 
         $dtype = $this->info->sampleFormat->toDtype();
-        $dataOut = $dtype === $data->dtype() ? $data : $data->astype($dtype);
+        $dataOut = $data->cast($dtype);
 
         $total = $frames * $channels;
         [$cType, $writeFn] = $this->lib->writeFn($dtype);

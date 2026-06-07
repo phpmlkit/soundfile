@@ -36,12 +36,32 @@ final class EnumsTest extends TestCase
         $this->assertSame($format, AudioFormat::fromExtension($format->extension()));
     }
 
-    public function testAudioFormatDefaultSampleFormat(): void
+    public function testAudioFormatPreferredSampleFormat(): void
     {
-        $this->assertSame(SampleFormat::Pcm16, AudioFormat::Wav->defaultSampleFormat());
-        $this->assertSame(SampleFormat::Vorbis, AudioFormat::Ogg->defaultSampleFormat());
-        $this->assertSame(SampleFormat::MpegLayerIII, AudioFormat::Mpeg->defaultSampleFormat());
-        $this->assertSame(SampleFormat::Float, AudioFormat::Caf->defaultSampleFormat());
+        $this->assertSame(
+            SampleFormat::Float,
+            AudioFormat::Wav->preferredSampleFormat(DType::Float32),
+        );
+        $this->assertSame(
+            SampleFormat::Pcm16,
+            AudioFormat::Wav->preferredSampleFormat(DType::Int16),
+        );
+        $this->assertSame(
+            SampleFormat::Pcm16,
+            AudioFormat::Flac->preferredSampleFormat(DType::Float32),
+        );
+        $this->assertSame(
+            SampleFormat::Vorbis,
+            AudioFormat::Ogg->preferredSampleFormat(DType::Float32),
+        );
+    }
+
+    public function testAudioFormatCompatibleSampleFormatsFirstPreferred(): void
+    {
+        $this->assertSame(SampleFormat::Float, AudioFormat::Wav->compatibleSampleFormats()[0]);
+        $this->assertSame(SampleFormat::Pcm16, AudioFormat::Flac->compatibleSampleFormats()[0]);
+        $this->assertSame(SampleFormat::Vorbis, AudioFormat::Ogg->compatibleSampleFormats()[0]);
+        $this->assertSame(SampleFormat::MpegLayerIII, AudioFormat::Mpeg->compatibleSampleFormats()[0]);
     }
 
     public function testAudioFormatFromPath(): void

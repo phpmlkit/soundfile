@@ -59,8 +59,9 @@ function sf_read(
 
 ## sf_write()
 
-Write an NDArray to an audio file. Format is inferred from the file extension when not specified. DType is
-auto-converted to match the target subtype.
+Write an NDArray to an audio file. Format is inferred from the file extension when not specified. When the encoding
+subtype is omitted, it is resolved by consulting both the AudioFormat's compatible subtypes and the data's DType.
+The DType is auto-converted to match the chosen subtype.
 
 ```php
 function sf_write(
@@ -74,20 +75,20 @@ function sf_write(
 
 **Parameters:**
 
-| Parameter     | Type            | Description                                                             |
-|---------------|-----------------|-------------------------------------------------------------------------|
-| `$file`       | `string`        | Output file path                                                        |
-| `$data`       | `NDArray`       | Signal data, `[N]` or `[N, channels]`. 1D is auto-expanded to `[N, 1]`. |
-| `$sampleRate` | `int`           | Sample rate in Hz                                                       |
-| `$format`     | `?AudioFormat`  | Container format. `null` = inferred from extension.                     |
-| `$subtype`    | `?SampleFormat` | Encoding subtype. `null` = format's default.                            |
+| Parameter     | Type            | Description                                                                   |
+|---------------|-----------------|-------------------------------------------------------------------------------|
+| `$file`       | `string`        | Output file path                                                              |
+| `$data`       | `NDArray`       | Signal data, `[N]` or `[N, channels]`. 1D is auto-expanded to `[N, 1]`.       |
+| `$sampleRate` | `int`           | Sample rate in Hz                                                             |
+| `$format`     | `?AudioFormat`  | Container format. `null` = inferred from extension.                           |
+| `$subtype`    | `?SampleFormat` | Encoding subtype. `null` = resolved from the format's compatible subtypes and the data's DType. |
 
 **Throws:** `SoundFileException` if the format/subtype combination is invalid or a write error occurs.
 
 **Examples:**
 
 ```php
-// Simple write — format and subtype auto-detected
+// Subtype resolved from format and data dtype — Float32 in WAV produces Float encoding
 sf_write('output.wav', $audio, sampleRate: 44100);
 
 // Explicit format and subtype
