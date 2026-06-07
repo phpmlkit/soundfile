@@ -29,8 +29,9 @@ Full cases: `Paf`, `Svx`, `Nist`, `Voc`, `Ircam`, `W64`, `Mat4`, `Mat5`, `Pvf`, 
 AudioFormat::Wav->extension();                               // 'wav'
 AudioFormat::fromExtension('flac');                          // AudioFormat::Flac
 AudioFormat::fromPath('song.mp3');                           // AudioFormat::Mpeg
-AudioFormat::Wav->defaultSampleFormat();                     // SampleFormat::Pcm16
-AudioFormat::Wav->compatibleSampleFormats();                 // [PcmS8, Pcm16, ...]
+AudioFormat::Wav->compatibleSampleFormats();                 // [Float, Double, Pcm32, ...]
+AudioFormat::Wav->preferredSampleFormat(DType::Float32);     // SampleFormat::Float
+AudioFormat::Wav->preferredSampleFormat(DType::Int16);       // SampleFormat::Pcm16
 AudioFormat::fromSndfileFormat($combinedFormat);             // Extract from sf format value
 ```
 

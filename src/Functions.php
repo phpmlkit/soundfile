@@ -135,7 +135,7 @@ function sf_write(
     $format ??= AudioFormat::fromPath($file)
         ?? throw new SoundFileException("Cannot determine format for '{$file}'");
 
-    $subtype ??= $format->defaultSampleFormat();
+    $subtype ??= $format->preferredSampleFormat($data->dtype());
 
     if (!sf_check_format($format, $subtype)) {
         throw new SoundFileException(
@@ -144,7 +144,7 @@ function sf_write(
     }
 
     $dtype = $subtype->toDtype();
-    $dataOut = $dtype === $data->dtype() ? $data : $data->astype($dtype);
+    $dataOut = $data->cast($dtype);
 
     $lib = Libsndfile::get();
 

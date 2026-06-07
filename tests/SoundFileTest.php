@@ -215,6 +215,45 @@ final class SoundFileTest extends TestCase
         unlink($tmp);
     }
 
+    /**
+     * Regression: creating a SoundFile without a subtype must auto-select
+     * Float for WAV, preserving sample values on write.
+     */
+    public function testWriteFloat32DefaultSubtypePreservesValues(): void
+    {
+        $tmp = sys_get_temp_dir().'/sndfile_reg_'.uniqid().'.wav';
+
+        $sf = new SoundFile(
+            $tmp,
+            FileMode::Write,
+            sampleRate: 8000,
+            channels: 1,
+            format: AudioFormat::Wav,
+        );
+        $data = NDArray::array([[0.75], [-0.5], [0.25], [-0.9]], DType::Float32);
+        $sf->write($data);
+        $sf->close();
+
+        $sf2 = new SoundFile($tmp, FileMode::Read);
+        $read = $sf2->read(null);
+        $sf2->close();
+
+        $this->assertSame(DType::Float32, $read->dtype());
+        $this->assertSame([4, 1], $read->shape());
+
+        $srcArr = $data->toArray();
+        $backArr = $read->toArray();
+        for ($i = 0; $i < 4; ++$i) {
+            $this->assertEqualsWithDelta(
+                (float) $srcArr[$i][0],
+                (float) $backArr[$i][0],
+                0.001,
+            );
+        }
+
+        unlink($tmp);
+    }
+
     public function testWriteChannelMismatchThrows(): void
     {
         $tmp = sys_get_temp_dir().'/sndfile_ch_err_'.uniqid().'.wav';
