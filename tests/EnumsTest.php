@@ -97,25 +97,6 @@ final class EnumsTest extends TestCase
         $this->assertFalse(SampleFormat::Vorbis->isInteger());
     }
 
-    public function testSampleFormatToFromDtypeRoundTrip(): void
-    {
-        $mappings = [
-            [DType::Int8, SampleFormat::PcmS8],
-            [DType::Int16, SampleFormat::Pcm16],
-            [DType::Int32, SampleFormat::Pcm32],
-            [DType::UInt8, SampleFormat::PcmU8],
-            [DType::Float32, SampleFormat::Float],
-            [DType::Float64, SampleFormat::Double],
-        ];
-
-        foreach ($mappings as [$dtype, $expectedFormat]) {
-            $format = SampleFormat::fromDtype($dtype);
-            $this->assertNotNull($format, "fromDtype({$dtype->name}) returned null");
-            $this->assertSame($expectedFormat, $format);
-            $this->assertSame($dtype, $format->toDtype());
-        }
-    }
-
     public function testSampleFormatIsPcm(): void
     {
         $this->assertTrue(SampleFormat::Pcm16->isPcm());

@@ -8,6 +8,7 @@ use FFI;
 use FFI\CData;
 use PhpMlKit\NDArray\DType;
 use PhpMlKit\SoundFile\Enums\FileMode;
+use PhpMlKit\SoundFile\Exceptions\SoundFileException;
 
 /**
  * Low-level libsndfile FFI wrapper.
@@ -76,15 +77,24 @@ final class Libsndfile extends NativeLibrary
     /**
      * Dispatch to the correct read function and C buffer type for a given DType.
      *
+     * Only Float32, Float64, Int16, and Int32 are supported. Integer samples
+     * are normalized to [-1.0, 1.0] for float reads, and float data is
+     * truncated to the nearest integer for int reads.
+     *
      * @return array{string, \Closure(self, CData, CData, int): int}
+     *
+     * @throws SoundFileException for unsupported dtypes
      */
     public function readFn(DType $dtype): array
     {
         return match ($dtype) {
+            DType::Float32 => ['float', static fn (self $l, $h, $b, $f) => $l->readFloat($h, $b, $f)],
             DType::Float64 => ['double', static fn (self $l, $h, $b, $f) => $l->readDouble($h, $b, $f)],
-            DType::Int32, DType::Int64 => ['int', static fn (self $l, $h, $b, $f) => $l->readInt($h, $b, $f)],
-            DType::Int16, DType::Int8, DType::UInt8 => ['short', static fn (self $l, $h, $b, $f) => $l->readShort($h, $b, $f)],
-            default => ['float', static fn (self $l, $h, $b, $f) => $l->readFloat($h, $b, $f)],
+            DType::Int32 => ['int', static fn (self $l, $h, $b, $f) => $l->readInt($h, $b, $f)],
+            DType::Int16 => ['short', static fn (self $l, $h, $b, $f) => $l->readShort($h, $b, $f)],
+            default => throw new SoundFileException(
+                "Unsupported read dtype: {$dtype->name}. Only Float32, Float64, Int16, and Int32 are supported."
+            ),
         };
     }
 
@@ -115,15 +125,22 @@ final class Libsndfile extends NativeLibrary
     /**
      * Dispatch to the correct write function and C buffer type for a given DType.
      *
+     * Only Float32, Float64, Int16, and Int32 are supported.
+     *
      * @return array{string, \Closure(self, CData, CData, int): int}
+     *
+     * @throws SoundFileException for unsupported dtypes
      */
     public function writeFn(DType $dtype): array
     {
         return match ($dtype) {
+            DType::Float32 => ['float', static fn (self $l, $h, $b, $f) => $l->writeFloat($h, $b, $f)],
             DType::Float64 => ['double', static fn (self $l, $h, $b, $f) => $l->writeDouble($h, $b, $f)],
-            DType::Int32, DType::Int64 => ['int', static fn (self $l, $h, $b, $f) => $l->writeInt($h, $b, $f)],
-            DType::Int16, DType::Int8, DType::UInt8 => ['short', static fn (self $l, $h, $b, $f) => $l->writeShort($h, $b, $f)],
-            default => ['float', static fn (self $l, $h, $b, $f) => $l->writeFloat($h, $b, $f)],
+            DType::Int32 => ['int', static fn (self $l, $h, $b, $f) => $l->writeInt($h, $b, $f)],
+            DType::Int16 => ['short', static fn (self $l, $h, $b, $f) => $l->writeShort($h, $b, $f)],
+            default => throw new SoundFileException(
+                "Unsupported write dtype: {$dtype->name}. Only Float32, Float64, Int16, and Int32 are supported."
+            ),
         };
     }
 

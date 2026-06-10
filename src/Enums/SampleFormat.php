@@ -66,19 +66,27 @@ enum SampleFormat: int
         return $this->isInteger();
     }
 
-    /** Map this subtype to the closest NDArray DType. */
+    /** Map this subtype to the closest valid NDArray DType for reading/writing. */
     public function toDtype(): DType
     {
         return match ($this) {
-            self::PcmS8 => DType::Int8,
-            self::Pcm16 => DType::Int16,
-            self::Pcm24 => DType::Int32,
-            self::Pcm32 => DType::Int32,
-            self::PcmU8 => DType::UInt8,
+            self::PcmS8, self::PcmU8, self::Pcm16 => DType::Int16,
+            self::Pcm24, self::Pcm32 => DType::Int32,
             self::Float => DType::Float32,
             self::Double => DType::Float64,
             default => DType::Float32,
         };
+    }
+
+    /**
+     * Extract the subtype from a combined libsndfile format value.
+     *
+     * The combined value is `format | subtype`. This masks off the
+     * container format bits to return just the encoding subtype.
+     */
+    public static function fromSndfileFormat(int $combinedFormat): ?self
+    {
+        return self::tryFrom($combinedFormat & 0x0000FFFF);
     }
 
     /** Find the closest subtype for a given NDArray DType. Returns null if no match. */
@@ -93,16 +101,5 @@ enum SampleFormat: int
             DType::Float64 => self::Double,
             default => null,
         };
-    }
-
-    /**
-     * Extract the subtype from a combined libsndfile format value.
-     *
-     * The combined value is `format | subtype`. This masks off the
-     * container format bits to return just the encoding subtype.
-     */
-    public static function fromSndfileFormat(int $combinedFormat): ?self
-    {
-        return self::tryFrom($combinedFormat & 0x0000FFFF);
     }
 }

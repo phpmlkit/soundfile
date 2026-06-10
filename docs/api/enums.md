@@ -65,7 +65,6 @@ SampleFormat::Pcm16->bitDepth();            // 16
 SampleFormat::Pcm16->isInteger();           // true
 SampleFormat::Float->isPcm();               // false
 SampleFormat::Float->toDtype();             // DType::Float32
-SampleFormat::fromDtype(DType::Int16);      // SampleFormat::Pcm16
 SampleFormat::fromSndfileFormat(0x010006);  // SampleFormat::Float
 ```
 

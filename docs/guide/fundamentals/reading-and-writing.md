@@ -17,6 +17,7 @@ function sf_read(
     string $file,
     ?int $start = null,
     ?int $stop = null,
+    DType $dtype = DType::Float32,
     bool $always2d = false,
     int $blocksize = 4096,
 ): array // [NDArray, SfInfo]
@@ -30,7 +31,31 @@ use function PhpMlKit\SoundFile\sf_read;
 [$audio, $info] = sf_read('song.wav');
 ```
 
-The returned NDArray's dtype matches the file's native encoding. A WAV file stored as Pcm16 produces an Int16 array. The returned `SfInfo` contains the file's signal properties.
+By default, audio is returned as `Float32` regardless of the file's native encoding. Integer files (e.g. PCM16) are normalized to `[-1.0, 1.0]`, and float files are returned as-is or downcast if the file uses a wider type.
+
+### Choosing a dtype
+
+The `$dtype` parameter controls the output array's data type. Only four dtypes are supported:
+
+| dtype            | Behavior                                                |
+|------------------|---------------------------------------------------------|
+| `Float32`        | Default — normalized floats in `[-1.0, 1.0]`           |
+| `Float64`        | High-precision normalized floats                        |
+| `Int16`          | Raw 16-bit integers in `[-32768, 32767]`                |
+| `Int32`          | Raw 32-bit integers in `[-2147483648, 2147483647]`      |
+
+Dtype conversion is handled automatically — you can read a PCM16 file as `Float32` (it normalizes to `[-1.0, 1.0]`) or a Float file as `Int16` (it truncates to the nearest integer):
+
+```php
+// Read PCM16 file as normalized floats (default)
+[$audio, $info] = sf_read('pcm16_file.wav');
+
+// Read PCM16 file as raw integers
+[$audio, $info] = sf_read('pcm16_file.wav', dtype: DType::Int16);
+
+// Read Float file as raw 16-bit integers
+[$audio, $info] = sf_read('float_file.wav', dtype: DType::Int16);
+```
 
 ### Partial reads
 
