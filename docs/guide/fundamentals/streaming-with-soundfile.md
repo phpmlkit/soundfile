@@ -55,7 +55,29 @@ $rest = $sf->read();
 $sf->close();
 ```
 
-If you ask for more frames than remain, you get what's left — no error, just a shorter NDArray. The return value's dtype always matches the file's native encoding.
+If you ask for more frames than remain, you get what's left — no error, just a shorter NDArray.
+
+### Dtype control
+
+`read()` accepts a `$dtype` parameter (default `Float32`) to control the output data type. The same four dtypes are supported as with `sf_read()`: `Float32`, `Float64`, `Int16`, and `Int32`.
+
+```php
+// Read as raw 16-bit integers
+$chunk = $sf->read(512, dtype: DType::Int16);
+
+// Read as high-precision float
+$chunk = $sf->read(512, dtype: DType::Float64);
+```
+
+### always2d
+
+`read()` also accepts an `$always2d` parameter (default `false`). When `true`, mono files return a 2D array of shape `[frames, 1]` instead of the default `[frames]`:
+
+```php
+// 2D mono output
+$chunk = $sf->read(512, always2d: true);
+// $chunk shape: [512, 1] for a mono file
+```
 
 You can check progress with `tell()` and `eof()`:
 
@@ -78,6 +100,11 @@ $sf = new SoundFile('large-file.wav', FileMode::Read);
 foreach ($sf->blocks(4096) as $block) {
     processBlock($block);
     echo "Position: {$sf->tell()}\n";
+}
+
+// With explicit dtype and 2D mono output
+foreach ($sf->blocks(4096, dtype: DType::Int16, always2d: true) as $block) {
+    processBlock($block);
 }
 
 // The handle is still open here — you can seek and read more

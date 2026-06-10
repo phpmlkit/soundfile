@@ -65,25 +65,28 @@ Read up to `$numFrames` frames from the current position. Each call advances the
 from where the previous one left off.
 
 ```php
-public function read(?int $numFrames = null): NDArray
+public function read(?int $numFrames = null, DType $dtype = DType::Float32, bool $always2d = false): NDArray
 ```
 
 **Parameters:**
 
-| Parameter    | Type   | Description                                                           |
-|--------------|--------|-----------------------------------------------------------------------|
-| `$numFrames` | `?int` | Maximum frames to read. `null` = all remaining from current position. |
+| Parameter    | Type   | Description                                                                           |
+|--------------|--------|---------------------------------------------------------------------------------------|
+| `$numFrames` | `?int` | Maximum frames to read. `null` = all remaining from current position.                 |
+| `$dtype`     | `DType`| Desired dtype of the returned array. One of Float32 (default), Float64, Int16, Int32. |
+| `$always2d`  | `bool` | If `true`, mono files return `[N, 1]` instead of `[N]`. Default `false`.              |
 
-**Returns:** `NDArray` of shape `[framesRead, channels]` in the file's native dtype.
+**Returns:** `NDArray` of shape `[framesRead]` for mono (or `[framesRead, 1]` with `always2d: true`) and `[framesRead, channels]` for multi-channel. Default dtype is `Float32`.
 
-**Throws:** `SoundFileException` if the handle is closed, opened in write-only mode, or a read error occurs.
+**Throws:** `SoundFileException` if the handle is closed, opened in write-only mode, an unsupported dtype is given, or a read error occurs.
 
 **Example:**
 
 ```php
-$chunk = $sf->read(512);   // Read 512 frames
-$chunk = $sf->read(512);   // Read the next 512 frames
-$rest = $sf->read(null);   // Read everything remaining
+$chunk = $sf->read(512);                      // Read 512 frames (Float32, 1D for mono)
+$chunk = $sf->read(512, always2d: true);      // Read 512 frames as 2D
+$chunk = $sf->read(512, dtype: DType::Int16); // Read 512 frames as Int16
+$rest = $sf->read(null);                      // Read everything remaining
 ```
 
 ---
@@ -216,14 +219,16 @@ public function mode(): FileMode
 Generator that yields NDArrays of up to `$blocksize` frames.
 
 ```php
-public function blocks(int $blocksize = 4096): Generator
+public function blocks(int $blocksize = 4096, DType $dtype = DType::Float32, bool $always2d = false): Generator
 ```
 
 **Parameters:**
 
-| Parameter    | Type  | Description                               |
-|--------------|-------|-------------------------------------------|
-| `$blocksize` | `int` | Maximum frames per block. Default `4096`. |
+| Parameter    | Type    | Description                                                            |
+|--------------|---------|------------------------------------------------------------------------|
+| `$blocksize` | `int`   | Maximum frames per block. Default `4096`.                              |
+| `$dtype`     | `DType` | Desired dtype of each block. One of Float32 (default), Float64, Int16, Int32. |
+| `$always2d`  | `bool`  | If `true`, mono blocks return `[N, 1]` instead of `[N]`. Default `false`. |
 
 **Returns:** `Generator<int, NDArray>` — each yielded value is an NDArray of shape `[≤blocksize, channels]`.
 
@@ -231,6 +236,11 @@ public function blocks(int $blocksize = 4096): Generator
 
 ```php
 foreach ($sf->blocks(1024) as $block) {
+    process($block);
+}
+
+// With explicit dtype and 2D mono output
+foreach ($sf->blocks(1024, dtype: DType::Int16, always2d: true) as $block) {
     process($block);
 }
 ```

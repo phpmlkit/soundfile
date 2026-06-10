@@ -18,7 +18,14 @@ use function PhpMlKit\SoundFile\sf_read;
 
 echo $info->sampleRate;               // 44100
 print_r($audio->shape());     // [441000]  (mono, 1D by default)
-echo $audio->dtype()->name;   // Float32
+echo $audio->dtype()->name;   // Float32 (default)
+```
+
+Audio is returned as `Float32` by default — integer files are normalized to `[-1.0, 1.0]`. To read raw integer samples, pass an explicit dtype:
+
+```php
+// Read as raw 16-bit integers
+[$audio, $info] = sf_read('song.wav', dtype: DType::Int16);
 ```
 
 For a mono file, the default output is a 1D array. Set `always2d` to `true` for the canonical `[frames, 1]` shape:
