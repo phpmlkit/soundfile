@@ -24,7 +24,7 @@ features:
     details: Instance-based SoundFile class with read, write, seek, tell, block iteration, and metadata tags.
   - icon: 🏷️
     title: Full Metadata Support
-    details: Read and write title, artist, album, track number, genre, and arbitrary tags on open handles.
+    details: Read and write title, artist, album, track number, and genre on open handles.
   - icon: 🔧
     title: Battle-Tested Foundation
     details: Powered by libsndfile and libsamplerate — the standard C libraries for audio I/O and sample rate conversion.

@@ -1,7 +1,8 @@
 # Metadata
 
-SoundFile supports reading and writing string metadata tags on open handles. The tags follow libsndfile's `SF_STR_*`
-constants and are available on WAV, FLAC, AIFF, and other formats that support embedded metadata.
+SoundFile supports reading and writing string metadata tags on open handles via named
+methods. Tags are available on WAV, FLAC, AIFF, and other formats that support embedded
+metadata.
 
 ## Reading Metadata
 
@@ -66,18 +67,8 @@ may not be persisted correctly.
 | `trackNumber()` | `setTrackNumber()` | `0x09`   | Track number      |
 | `genre()`       | `setGenre()`       | `0x10`   | Genre name        |
 
-## Arbitrary Tags
-
-For SF_STR constants not covered by the named methods, use `getString()` and `setString()`:
-
-```php
-$sf->setString(0x04, 'Custom Artist'); // Equivalent to setArtist()
-$value = $sf->getString(0x04);         // Equivalent to artist()
-```
-
 ## Notes
 
 - Not every container supports every metadata field.
-- `setString()` will throw `SoundFileException` if called on a closed handle.
-- Attempting to call a setter on a read-mode handle throws
-  a `SoundFileException`
+- Attempting to call a setter on a read-mode handle or a closed handle throws
+  a `SoundFileException`.

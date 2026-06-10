@@ -19,7 +19,7 @@
 - **One-shot convenience** — `sf_read()` and `sf_write()` for simple load/save without managing a handle
 - **Sample rate conversion** — `sf_resample()` with chunked progressive mode for large files, one-shot simple mode for
   small signals, and four quality levels
-- **Metadata** — read and write title, artist, album, track number, and arbitrary tags
+- **Metadata** — read and write title, artist, album, track number, and genre tags
 - **Type-safe** — PHP 8.2+ with backed enums, readonly value objects, and strict types throughout
 
 ## Installation
@@ -288,8 +288,6 @@ defaults to the format's preferred).
 | `license()`     | `setLicense(string)`     | 0x08            |
 | `trackNumber()` | `setTrackNumber(string)` | 0x09            |
 | `genre()`       | `setGenre(string)`       | 0x10            |
-
-Plus `getString(int $strType)` and `setString(int $strType, string $value)` for arbitrary SF_STR constants.
 
 #### `SfInfo`
 

@@ -466,88 +466,130 @@ final class SoundFile
     }
 
     /**
+     * Set the title tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setTitle(string $title): void
+    {
+        $this->setString(0x01, $title);
+    }
+
+    /**
+     * Set the copyright tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setCopyright(string $copyright): void
+    {
+        $this->setString(0x02, $copyright);
+    }
+
+    /**
+     * Set the encoder software tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setSoftware(string $software): void
+    {
+        $this->setString(0x03, $software);
+    }
+
+    /**
+     * Set the artist tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setArtist(string $artist): void
+    {
+        $this->setString(0x04, $artist);
+    }
+
+    /**
+     * Set the comment tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setComment(string $comment): void
+    {
+        $this->setString(0x05, $comment);
+    }
+
+    /**
+     * Set the date tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setDate(string $date): void
+    {
+        $this->setString(0x06, $date);
+    }
+
+    /**
+     * Set the album tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setAlbum(string $album): void
+    {
+        $this->setString(0x07, $album);
+    }
+
+    /**
+     * Set the license tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setLicense(string $license): void
+    {
+        $this->setString(0x08, $license);
+    }
+
+    /**
+     * Set the track number tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setTrackNumber(string $trackNumber): void
+    {
+        $this->setString(0x09, $trackNumber);
+    }
+
+    /**
+     * Set the genre tag.
+     *
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
+     */
+    public function setGenre(string $genre): void
+    {
+        $this->setString(0x10, $genre);
+    }
+
+    /**
      * Read an embedded tag by its code.
      *
      * @param int $strType Tag code (0x01 = Title, 0x04 = Artist, etc.)
      */
-    public function getString(int $strType): ?string
+    private function getString(int $strType): ?string
     {
         return null !== $this->handle ? $this->lib->getString($this->handle, $strType) : null;
     }
 
     /**
-     * Write an embedded tag.
-     *
-     * @throws SoundFileException If the handle is closed
+     * @throws SoundFileException If the handle is closed or opened in read-only mode
      */
-    public function setString(int $strType, string $value): void
+    private function setString(int $strType, string $value): void
     {
         if (null === $this->handle) {
             throw new SoundFileException('Cannot set metadata on a closed file');
         }
 
+        if (FileMode::Read === $this->mode) {
+            throw new SoundFileException('Cannot set metadata on a read-only file');
+        }
+
         $this->lib->setString($this->handle, $strType, $value);
         $this->metadata = null;
-    }
-
-    /** @see setString() */
-    public function setTitle(string $v): void
-    {
-        $this->setString(0x01, $v);
-    }
-
-    /** @see setString() */
-    public function setCopyright(string $v): void
-    {
-        $this->setString(0x02, $v);
-    }
-
-    /** @see setString() */
-    public function setSoftware(string $v): void
-    {
-        $this->setString(0x03, $v);
-    }
-
-    /** @see setString() */
-    public function setArtist(string $v): void
-    {
-        $this->setString(0x04, $v);
-    }
-
-    /** @see setString() */
-    public function setComment(string $v): void
-    {
-        $this->setString(0x05, $v);
-    }
-
-    /** @see setString() */
-    public function setDate(string $v): void
-    {
-        $this->setString(0x06, $v);
-    }
-
-    /** @see setString() */
-    public function setAlbum(string $v): void
-    {
-        $this->setString(0x07, $v);
-    }
-
-    /** @see setString() */
-    public function setLicense(string $v): void
-    {
-        $this->setString(0x08, $v);
-    }
-
-    /** @see setString() */
-    public function setTrackNumber(string $v): void
-    {
-        $this->setString(0x09, $v);
-    }
-
-    /** @see setString() */
-    public function setGenre(string $v): void
-    {
-        $this->setString(0x10, $v);
     }
 
     /** Frames remaining from the current position to EOF (read mode only). */
