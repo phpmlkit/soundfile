@@ -36,7 +36,7 @@ Examples:
 Important details:
 
 - Some subtypes have a meaningful `bitDepth()` (PCM), while compressed formats return 0.
-- `toDtype()` provides the dtype used when reading/writing that subtype.
+- `toDtype()` provides the dtype used when writing that subtype.
 
 ---
 
@@ -55,12 +55,15 @@ It also provides convenience:
 
 ## What happens on read?
 
-When you read a file, SndFle:
+When you read a file, SoundFile:
 
-- Reads the file header to determine format + subtype.
-- Chooses the dtype based on the Sample Format.
+- Reads the file header to determine format, subtype, channels, and frame count.
+- Uses the `$dtype` you specify (defaults to `Float32`) to select the output data type.
+- Integer samples are normalized to `[-1.0, 1.0]` for float reads; float data is truncated to the nearest integer for int reads.
 - Allocates one C buffer and reads frames in chunks into that buffer.
-- Creates an NDArray from that buffer.
+- Creates an NDArray from that buffer with the requested dtype.
+
+Only four dtypes are supported for reading: `Float32`, `Float64`, `Int16`, and `Int32`. Passing any other dtype throws a `SoundFileException`.
 
 ## What happens on write?
 
@@ -102,21 +105,39 @@ sf_check_format(AudioFormat::Flac, SampleFormat::Float);    // false
 
 An invalid combination throws a `SoundFileException` before any file is created.
 
-## Bit Depth and Clipping
+## Normalization, Scaling, and Clipping
 
-PCM formats store integer samples (e.g. `Int16`) and floating formats store `Float32/Float64`.
+When you pick a `$dtype` on read, SoundFile converts between the file's native encoding and the requested type:
 
-SoundFile does not impose an extra normalization layer; you are responsible for choosing a representation that matches
-your pipeline. If you write float data to a PCM subtype, it will be converted to integers. For example, when writing Float21 data as Pcm16, values outside the Int16 range (-32768 to 32767) are clipped by libsndfile:
+### Integer → Float (normalized)
+
+Reading an integer file (PCM16, PCM32) as `Float32` or `Float64` normalizes samples to `[-1.0, 1.0]`. For PCM16, `-32768` maps to `-1.0` and `32767` maps to `~1.0`. This is the default behavior — ideal for ML pipelines.
 
 ```php
-// Values > 32767 clip to 32767
+[$audio, $] = sf_read('pcm16_file.wav');
+// DType::Float32, values in [-1.0, 1.0]
+```
+
+### Float → Integer (truncated)
+
+Reading a float file as `Int16` or `Int32` truncates each sample to the nearest integer. Values outside the target type's range are clipped. No automatic scaling is applied — a float value of `1.0` becomes `1`, not `32767`.
+
+```php
+[$audio, $] = sf_read('float_file.wav', dtype: DType::Int16);
+// DType::Int16, float values truncated to ints
+```
+
+### Write-side clipping
+
+When writing float data to a PCM subtype, values outside the subtype's integer range are clipped. For example, writing `Float32` data to a `Pcm16` file clips values outside `[-32768, 32767]`:
+
+```php
 $loud = NDArray::array([[50000.0], [-50000.0]], DType::Float32);
 sf_write('loud.wav', $loud, 44100); // Written as Pcm16 — values clipped
 
-[$read, $] = sf_read('loud.wav');
-$arr = $read->toArray();
-// $arr[0] will be ~32767, $arr[1] will be ~-32768
+// Reading back as Int16 confirms the clipping
+[$read, $] = sf_read('loud.wav', dtype: DType::Int16);
+// $read will be ~32767 and ~-32768
 ```
 
-If you need explicit scaling/clipping rules for your application, apply them in NDArray before writing.
+If you need explicit scaling or clipping rules for your application, apply them in NDArray before writing.

@@ -20,24 +20,29 @@ use PhpMlKit\SoundFile\FFI\Libsndfile;
  * Opens the file, allocates one output buffer, reads data in chunks, and
  * returns the complete signal as an NDArray along with its sample rate.
  *
- * The dtype matches the file's native format. For mono files, the default
- * output is a 1D array of shape [frames]; set $always2d to true for the
- * canonical [frames, 1] shape.
+ * The $dtype controls the array's data type. Integer samples are normalized
+ * to [-1.0, 1.0] for float reads, and float data is truncated to the nearest
+ * integer for int reads. Only Float32, Float64, Int16, and Int32 are supported.
+ *
+ * For mono files, the default output is a 1D array of shape [frames]; set
+ * $always2d to true for the canonical [frames, 1] shape.
  *
  * @param string   $file      Path to the audio file
  * @param null|int $start     First frame index to read (0-based; null = beginning)
  * @param null|int $stop      One past the last frame index (null = end of file)
+ * @param DType    $dtype     Desired dtype of the returned array (default Float32)
  * @param bool     $always2d  If true, mono files return [frames, 1] instead of [frames]
  * @param int      $blocksize Frames per internal read chunk (affects memory usage, not results)
  *
  * @return array{NDArray, SfInfo} [signal data, file metadata]
  *
- * @throws SoundFileException If the file cannot be opened or a read error occurs
+ * @throws SoundFileException If the file cannot be opened, an unsupported dtype is given, or a read error occurs
  */
 function sf_read(
     string $file,
     ?int $start = null,
     ?int $stop = null,
+    DType $dtype = DType::Float32,
     bool $always2d = false,
     int $blocksize = 4096,
 ): array {
@@ -53,7 +58,6 @@ function sf_read(
         $info = SfInfo::fromCData($sfInfo);
         $channels = $info->channels;
         $totalFileFrames = $info->frames;
-        $dtype = $info->sampleFormat->toDtype();
 
         $start ??= 0;
         $stop ??= $totalFileFrames;

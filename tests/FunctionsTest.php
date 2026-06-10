@@ -103,11 +103,66 @@ final class FunctionsTest extends TestCase
         $this->assertSame(0, $data->shape()[0]);
     }
 
-    public function testReadPcm16ReturnsInt16(): void
+    public function testReadPcm16ReturnsFloat32ByDefault(): void
     {
         [$data, $_] = sf_read($this->pcm16Wav);
 
+        $this->assertSame(DType::Float32, $data->dtype());
+    }
+
+    public function testReadPcm16AsInt16ReturnsRawIntegers(): void
+    {
+        [$data, $_] = sf_read($this->pcm16Wav, dtype: DType::Int16);
+
         $this->assertSame(DType::Int16, $data->dtype());
+    }
+
+    public function testReadPcm16AsFloat32ProducesNormalizedValues(): void
+    {
+        [$data, $_] = sf_read($this->pcm16Wav, dtype: DType::Float32);
+
+        $this->assertSame(DType::Float32, $data->dtype());
+        $vals = $data->toArray();
+        foreach ($vals as $v) {
+            $this->assertGreaterThanOrEqual(-1.0, (float) $v);
+            $this->assertLessThanOrEqual(1.0, (float) $v);
+        }
+    }
+
+    public function testReadPcm16AsFloat64ProducesNormalizedDoubleValues(): void
+    {
+        [$data, $_] = sf_read($this->pcm16Wav, dtype: DType::Float64);
+
+        $this->assertSame(DType::Float64, $data->dtype());
+    }
+
+    public function testReadPcm16AsInt32ProducesInt32Values(): void
+    {
+        [$data, $_] = sf_read($this->pcm16Wav, dtype: DType::Int32);
+
+        $this->assertSame(DType::Int32, $data->dtype());
+    }
+
+    public function testReadFloatWavAsInt16ProducesIntValues(): void
+    {
+        [$data, $_] = sf_read($this->monoFloatWav, dtype: DType::Int16);
+
+        $this->assertSame(DType::Int16, $data->dtype());
+    }
+
+    public function testReadFloatWavAsFloat64ProducesDoubleValues(): void
+    {
+        [$data, $_] = sf_read($this->monoFloatWav, dtype: DType::Float64);
+
+        $this->assertSame(DType::Float64, $data->dtype());
+    }
+
+    public function testReadRejectsUnsupportedDtype(): void
+    {
+        $this->expectException(SoundFileException::class);
+        $this->expectExceptionMessage('Unsupported read dtype');
+
+        sf_read($this->monoFloatWav, dtype: DType::Int8);
     }
 
     // ===================================================================
@@ -139,7 +194,7 @@ final class FunctionsTest extends TestCase
         $tmp = sys_get_temp_dir().'/sw_pcm16_'.uniqid().'.wav';
 
         sf_write($tmp, $src, 8000, AudioFormat::Wav, SampleFormat::Pcm16);
-        [$back, $_] = sf_read($tmp);
+        [$back, $_] = sf_read($tmp, dtype: DType::Int16);
 
         $this->assertSame(DType::Int16, $back->dtype());
         $this->assertSame([4], $back->shape());
@@ -170,7 +225,7 @@ final class FunctionsTest extends TestCase
         $tmp = sys_get_temp_dir().'/sw_f32pcm16_'.uniqid().'.wav';
 
         sf_write($tmp, $src, 8000, AudioFormat::Wav, SampleFormat::Pcm16);
-        [$back, $_] = sf_read($tmp);
+        [$back, $_] = sf_read($tmp, dtype: DType::Int16);
 
         $this->assertSame(DType::Int16, $back->dtype());
 
@@ -233,7 +288,7 @@ final class FunctionsTest extends TestCase
         $tmp = sys_get_temp_dir().'/sw_dbl_'.uniqid().'.wav';
 
         sf_write($tmp, $src, 8000, AudioFormat::Wav, SampleFormat::Double);
-        [$back, $_] = sf_read($tmp);
+        [$back, $_] = sf_read($tmp, dtype: DType::Float64);
 
         $this->assertSame(DType::Float64, $back->dtype());
 
@@ -404,7 +459,7 @@ final class FunctionsTest extends TestCase
         $tmp = sys_get_temp_dir().'/cc_i32_'.uniqid().'.wav';
 
         sf_write($tmp, $src, 8000, AudioFormat::Wav, SampleFormat::Pcm32);
-        [$back, $_] = sf_read($tmp);
+        [$back, $_] = sf_read($tmp, dtype: DType::Int32);
 
         $this->assertSame(DType::Int32, $back->dtype());
 
@@ -417,7 +472,7 @@ final class FunctionsTest extends TestCase
         $tmp = sys_get_temp_dir().'/cc_flac_'.uniqid().'.flac';
 
         sf_write($tmp, $src, 8000, AudioFormat::Flac, SampleFormat::Pcm16);
-        [$back, $_] = sf_read($tmp);
+        [$back, $_] = sf_read($tmp, dtype: DType::Int16);
 
         $this->assertSame(DType::Int16, $back->dtype());
 

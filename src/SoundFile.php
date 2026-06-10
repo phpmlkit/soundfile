@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpMlKit\SoundFile;
 
 use FFI\CData;
+use PhpMlKit\NDArray\DType;
 use PhpMlKit\NDArray\NDArray;
 use PhpMlKit\SoundFile\Enums\AudioFormat;
 use PhpMlKit\SoundFile\Enums\FileMode;
@@ -131,18 +132,24 @@ final class SoundFile
     /**
      * Read up to $numFrames frames from the current position.
      *
-     * The returned NDArray has shape [framesRead × channels] in the file's
-     * native dtype. Each call advances the position; subsequent reads
-     * continue from where the previous one left off.
+     * The $dtype controls the array's data type. Integer samples are normalized
+     * to [-1.0, 1.0] for float reads, and float data is truncated to the
+     * nearest integer for int reads. Only Float32, Float64, Int16, and Int32 are supported. Defaults to Float32.
      *
-     * Pass null to read all remaining frames from the current position.
+     * For mono files, the default output is a 1D array of shape [framesRead];
+     * set $always2d to true for the canonical [framesRead × 1] shape.
+     *
+     * Each call advances the position; subsequent reads continue from where the
+     * previous one left off. Pass null to read all remaining frames.
      *
      * @param null|int $numFrames Maximum frames to read (null = remaining)
+     * @param DType    $dtype     Desired dtype of the returned array (default Float32)
+     * @param bool     $always2d  If true, mono files return [frames, 1] instead of [frames]
      *
      * @throws SoundFileException If the file is closed, opened in write-only
-     *                            mode, or a read error occurs
+     *                            mode, an unsupported dtype is given, or a read error occurs
      */
-    public function read(?int $numFrames = null): NDArray
+    public function read(?int $numFrames = null, DType $dtype = DType::Float32, bool $always2d = false): NDArray
     {
         if (null === $this->handle) {
             throw new SoundFileException('Cannot read from a closed file');
@@ -154,7 +161,6 @@ final class SoundFile
 
         $numFrames ??= $this->remaining();
         $total = $numFrames * $this->info->channels;
-        $dtype = $this->info->sampleFormat->toDtype();
 
         [$cType, $readFn] = $this->lib->readFn($dtype);
         $buffer = $this->lib->new("{$cType}[{$total}]");
@@ -167,7 +173,13 @@ final class SoundFile
 
         $this->position += $read;
 
-        return NDArray::fromBuffer($buffer, [$read, $this->info->channels], $dtype);
+        $data = NDArray::fromBuffer($buffer, [$read, $this->info->channels], $dtype);
+
+        if (!$always2d && 1 === $this->info->channels) {
+            $data = $data->squeeze();
+        }
+
+        return $data;
     }
 
     /**
@@ -238,14 +250,16 @@ final class SoundFile
      *
      * Only available for handles opened in read or read-write mode.
      *
-     * @param int $blocksize Maximum frames per block
+     * @param int   $blocksize Maximum frames per block
+     * @param DType $dtype     Desired dtype of each block (default Float32)
+     * @param bool  $always2d  If false, mono blocks return [frames] instead of [frames, 1]
      *
      * @return \Generator<int, NDArray>
      */
-    public function blocks(int $blocksize = 4096): \Generator
+    public function blocks(int $blocksize = 4096, DType $dtype = DType::Float32, bool $always2d = false): \Generator
     {
         while (!$this->eof()) {
-            $chunk = $this->read($blocksize);
+            $chunk = $this->read($blocksize, $dtype, $always2d);
 
             if (0 === $chunk->shape()[0]) {
                 break;

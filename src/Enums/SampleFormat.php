@@ -66,32 +66,15 @@ enum SampleFormat: int
         return $this->isInteger();
     }
 
-    /** Map this subtype to the closest NDArray DType. */
+    /** Map this subtype to the closest valid NDArray DType for reading/writing. */
     public function toDtype(): DType
     {
         return match ($this) {
-            self::PcmS8 => DType::Int8,
-            self::Pcm16 => DType::Int16,
-            self::Pcm24 => DType::Int32,
-            self::Pcm32 => DType::Int32,
-            self::PcmU8 => DType::UInt8,
+            self::PcmS8, self::PcmU8, self::Pcm16 => DType::Int16,
+            self::Pcm24, self::Pcm32 => DType::Int32,
             self::Float => DType::Float32,
             self::Double => DType::Float64,
             default => DType::Float32,
-        };
-    }
-
-    /** Find the closest subtype for a given NDArray DType. Returns null if no match. */
-    public static function fromDtype(DType $dtype): ?self
-    {
-        return match ($dtype) {
-            DType::Int8 => self::PcmS8,
-            DType::Int16 => self::Pcm16,
-            DType::Int32 => self::Pcm32,
-            DType::UInt8 => self::PcmU8,
-            DType::Float32 => self::Float,
-            DType::Float64 => self::Double,
-            default => null,
         };
     }
 

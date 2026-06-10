@@ -55,7 +55,7 @@ final class SoundFileTest extends TestCase
         $sf = new SoundFile($this->monoWav, FileMode::Read);
         $chunk = $sf->read(50);
 
-        $this->assertSame([50, 1], $chunk->shape());
+        $this->assertSame([50], $chunk->shape());
         $this->assertSame(DType::Float32, $chunk->dtype());
 
         $sf->close();
@@ -77,7 +77,7 @@ final class SoundFileTest extends TestCase
         $sf = new SoundFile($this->monoWav, FileMode::Read);
 
         $data = $sf->read(null);
-        $this->assertSame([800, 1], $data->shape());
+        $this->assertSame([800], $data->shape());
 
         $sf->close();
     }
@@ -89,6 +89,101 @@ final class SoundFileTest extends TestCase
         $sf->seek(750);
         $data = $sf->read(100);
         $this->assertSame(50, $data->shape()[0]);
+
+        $sf->close();
+    }
+
+    public function testReadRejectsUnsupportedDtype(): void
+    {
+        $sf = new SoundFile($this->monoWav, FileMode::Read);
+
+        $this->expectException(SoundFileException::class);
+        $this->expectExceptionMessage('Unsupported read dtype');
+
+        $sf->read(10, dtype: DType::Int8);
+        $sf->close();
+    }
+
+    public function testReadAlways2dFalseIsDefault(): void
+    {
+        $sf = new SoundFile($this->monoWav, FileMode::Read);
+
+        $chunk = $sf->read(10);
+        $this->assertSame(1, $chunk->ndim());
+        $this->assertSame([10], $chunk->shape());
+
+        $chunk = $sf->read(10, always2d: true);
+        $this->assertSame(2, $chunk->ndim());
+        $this->assertSame([10, 1], $chunk->shape());
+
+        $sf->close();
+    }
+
+    public function testReadAlways2dFalseReturns1DForMono(): void
+    {
+        $sf = new SoundFile($this->monoWav, FileMode::Read);
+
+        $chunk = $sf->read(10, always2d: false);
+        $this->assertSame(1, $chunk->ndim());
+        $this->assertSame([10], $chunk->shape());
+
+        $sf->close();
+    }
+
+    public function testReadAlways2dFalseHasNoEffectOnStereo(): void
+    {
+        $sf = new SoundFile($this->stereoWav, FileMode::Read);
+
+        $chunk = $sf->read(10, always2d: false);
+        $this->assertSame(2, $chunk->ndim());
+        $this->assertSame([10, 2], $chunk->shape());
+
+        $sf->close();
+    }
+
+    public function testReadExplicitFloat32ReturnsFloat32(): void
+    {
+        $sf = new SoundFile($this->monoWav, FileMode::Read);
+
+        $chunk = $sf->read(10, dtype: DType::Float32);
+        $this->assertSame(DType::Float32, $chunk->dtype());
+
+        $sf->close();
+    }
+
+    public function testReadExplicitFloat64ReturnsFloat64(): void
+    {
+        $sf = new SoundFile($this->monoWav, FileMode::Read);
+
+        $chunk = $sf->read(10, dtype: DType::Float64);
+        $this->assertSame(DType::Float64, $chunk->dtype());
+
+        $sf->close();
+    }
+
+    public function testReadExplicitInt16ReturnsInt16(): void
+    {
+        $sf = new SoundFile($this->monoWav, FileMode::Read);
+
+        $chunk = $sf->read(10, dtype: DType::Int16);
+        $this->assertSame(DType::Int16, $chunk->dtype());
+
+        $sf->close();
+    }
+
+    public function testReadPcm16AsFloat32IsNormalized(): void
+    {
+        $sf = new SoundFile(Fixtures::monoPcm16Wav(), FileMode::Read);
+
+        $chunk = $sf->read(null, dtype: DType::Float32);
+        $this->assertSame(DType::Float32, $chunk->dtype());
+
+        $vals = $chunk->toArray();
+        foreach ($vals as $row) {
+            $v = \is_array($row) ? $row[0] : $row;
+            $this->assertGreaterThanOrEqual(-1.0, (float) $v);
+            $this->assertLessThanOrEqual(1.0, (float) $v);
+        }
 
         $sf->close();
     }
@@ -209,7 +304,7 @@ final class SoundFileTest extends TestCase
         $read = $sf2->read(null);
         $sf2->close();
 
-        $this->assertSame([4, 1], $read->shape());
+        $this->assertSame([4], $read->shape());
         $this->assertSame(DType::Float32, $read->dtype());
 
         unlink($tmp);
@@ -310,7 +405,7 @@ final class SoundFileTest extends TestCase
         $c1 = $sf1->read(10);
         $c2 = $sf2->read(10);
 
-        $this->assertSame([10, 1], $c1->shape());
+        $this->assertSame([10], $c1->shape());
         $this->assertSame([10, 2], $c2->shape());
 
         $sf1->close();
@@ -406,7 +501,7 @@ final class SoundFileTest extends TestCase
         // Verify by reading back
         $sf2 = new SoundFile($tmp, FileMode::Read);
         $data = $sf2->read(null);
-        $this->assertSame([6, 1], $data->shape());
+        $this->assertSame([6], $data->shape());
         $sf2->close();
 
         unlink($tmp);
@@ -432,7 +527,7 @@ final class SoundFileTest extends TestCase
         // Seek back and read everything
         $rw->seek(0);
         $data = $rw->read(null);
-        $this->assertSame([5, 1], $data->shape());
+        $this->assertSame([5], $data->shape());
         $rw->close();
 
         unlink($tmp);

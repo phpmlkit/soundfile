@@ -22,6 +22,7 @@ function sf_read(
     string $file,
     ?int $start = null,
     ?int $stop = null,
+    DType $dtype = DType::Float32,
     bool $always2d = false,
     int $blocksize = 4096,
 ): array // [NDArray, SfInfo]
@@ -34,18 +35,22 @@ function sf_read(
 | `$file`      | `string` | Path to the audio file                                                            |
 | `$start`     | `?int`   | First frame index to read (0-based). `null` = beginning.                          |
 | `$stop`      | `?int`   | One past the last frame index. `null` = end of file. Clipped to file length.      |
+| `$dtype`     | `DType`  | Desired dtype of the returned array. One of Float32 (default), Float64, Int16, Int32. |
 | `$always2d`  | `bool`   | If `true`, mono files return `[N, 1]` instead of `[N]`. Default `false`.          |
 | `$blocksize` | `int`    | Frames per internal read chunk. Affects memory usage during read, not the result. |
 
-**Returns:** `[NDArray, SfInfo]` — the signal data (dtype matches file's native encoding) and the file's full metadata.
+**Returns:** `[NDArray, SfInfo]` — the signal data (default `Float32`, normalized to `[-1.0, 1.0]` for integer files) and the file's full metadata.
 
-**Throws:** `SoundFileException` if the file cannot be opened or a read error occurs.
+**Throws:** `SoundFileException` if the file cannot be opened, an unsupported dtype is given, or a read error occurs.
 
 **Examples:**
 
 ```php
-// Read entire file
+// Read entire file (default Float32)
 [$audio, $info] = sf_read('song.wav');
+
+// Read as raw 16-bit integers
+[$audio, $info] = sf_read('song.wav', dtype: DType::Int16);
 
 // Read frames 100–299 (200 frames starting at frame 100)
 [$slice, $info] = sf_read('song.wav', start: 100, stop: 300);
