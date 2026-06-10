@@ -72,8 +72,6 @@ $snd->close($handle);
 | `seek()`        | `sf_seek`          | Seek to frame offset                        |
 | `close()`       | `sf_close`         | Close the handle                            |
 | `strError()`    | `sf_strerror`      | Error message for a handle                  |
-| `getString()`   | `sf_get_string`    | Read metadata tag                           |
-| `setString()`   | `sf_set_string`    | Write metadata tag                          |
 | `formatCheck()` | `sf_format_check`  | Validate format combo                       |
 | `newInfo()`     | —                  | Allocate SF_INFO struct                     |
 

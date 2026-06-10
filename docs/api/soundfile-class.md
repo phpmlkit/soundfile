@@ -297,50 +297,34 @@ public function sampleRate(): int
 
 ## String metadata
 
-These methods read and write SF_STR tags on open handles.
+These methods read and write the supported metadata tags on open handles.
 
 **Getters** (read mode, return `?string`):
 
-| Method          | SF_STR |
-|-----------------|--------|
-| `title()`       | `0x01` |
-| `copyright()`   | `0x02` |
-| `software()`    | `0x03` |
-| `artist()`      | `0x04` |
-| `comment()`     | `0x05` |
-| `date()`        | `0x06` |
-| `album()`       | `0x07` |
-| `license()`     | `0x08` |
-| `trackNumber()` | `0x09` |
-| `genre()`       | `0x10` |
+| Method          |
+|-----------------|
+| `title()`       |
+| `copyright()`   |
+| `software()`    |
+| `artist()`      |
+| `comment()`     |
+| `date()`        |
+| `album()`       |
+| `license()`     |
+| `trackNumber()` |
+| `genre()`       |
 
-**Setters** (write mode, return `void`):
+**Setters** (write mode, return `void`, throw on read-only handles):
 
-| Method                   | SF_STR |
-|--------------------------|--------|
-| `setTitle(string)`       | `0x01` |
-| `setCopyright(string)`   | `0x02` |
-| `setSoftware(string)`    | `0x03` |
-| `setArtist(string)`      | `0x04` |
-| `setComment(string)`     | `0x05` |
-| `setDate(string)`        | `0x06` |
-| `setAlbum(string)`       | `0x07` |
-| `setLicense(string)`     | `0x08` |
-| `setTrackNumber(string)` | `0x09` |
-| `setGenre(string)`       | `0x10` |
-
-### getString()
-
-Read an arbitrary SF_STR tag.
-
-```php
-public function getString(int $strType): ?string
-```
-
-### setString()
-
-Write an arbitrary SF_STR tag.
-
-```php
-public function setString(int $strType, string $value): void
-```
+| Method                   |
+|--------------------------|
+| `setTitle(string)`       |
+| `setCopyright(string)`   |
+| `setSoftware(string)`    |
+| `setArtist(string)`      |
+| `setComment(string)`     |
+| `setDate(string)`        |
+| `setAlbum(string)`       |
+| `setLicense(string)`     |
+| `setTrackNumber(string)` |
+| `setGenre(string)`       |

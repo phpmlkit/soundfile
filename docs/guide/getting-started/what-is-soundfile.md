@@ -8,7 +8,7 @@ SoundFile is a low-level PHP library for reading, writing, and resampling audio 
 - **Write** `NDArray` objects to audio files
 - **Resample** audio between sample rates with four quality levels
 - **Stream** audio in blocks for memory-efficient processing of large files
-- **Manage metadata** — read and write title, artist, album tags, and arbitrary fields
+- **Manage metadata** — read and write title, artist, album, and genre tags
 
 ## What it is NOT
 
